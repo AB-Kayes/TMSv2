@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import cohere
 from io import BytesIO
@@ -79,7 +77,7 @@ if uploaded_file is not None:
                             tables.append(df)
                         else:
                             st.warning(f"Skipping an empty or irregular table {table_number} on page {page_number}.")
-
+            
             if not tables:
                 st.error("No tables could be extracted from the PDF.")
                 st.stop()
@@ -105,8 +103,8 @@ if uploaded_file is not None:
             if amount_columns:
                 # Process each amount column
                 for col in amount_columns:
-                    # Remove currency symbols and commas
-                    full_table[col] = full_table[col].replace(r'[\$,]', '', regex=True)
+                    # Ensure that the column is converted to a string type before using .str accessor
+                    full_table[col] = full_table[col].astype(str).replace(r'[\$,]', '', regex=True)
                     full_table[col] = full_table[col].str.replace(',', '', regex=False)
                     # Convert to numeric
                     full_table[col] = pd.to_numeric(full_table[col], errors='coerce')
@@ -142,13 +140,20 @@ if uploaded_file is not None:
             with st.spinner('Analyzing the budget document with Cohere...'):
                 response = co.generate(
                     model='command-xlarge-nightly',
-                    prompt=(
-                        "You are a financial analyst specializing in government budgets. "
-                        "Analyze the following budget document for any inconsistencies in the financial data, especially discrepancies in totals. "
-                        "Provide a detailed report highlighting any issues found and recommendations:\n\n"
-                        f"{text_content}\n\n"
-                        "Provide your analysis below."
-                    ),
+                    prompt = (
+    "You are an expert financial analyst specializing in budgets. "
+    "Review the provided budget document for pricing inconsistencies or discrepancies. "
+    "Evaluate if the pricing aligns with typical market rates in Bangladesh and identify any issues. "
+    "Show the comparisions in small tables"
+    "Provide your findings in brief bullet points, focusing on financial totals. Only include explanations if there are significant problems or discrepancies.\n\n"
+    f"{text_content}\n\n"
+    "Your concise analysis: each in one line\n"
+    "- **Pricing Evaluation**: \n"
+    "- **Typical Prices in Bangladesh**: \n"
+    "- **Issues Found**: \n"
+    "- **Recommendations**: "
+)
+,
                     max_tokens=500,
                     temperature=0.7,
                     k=0,
